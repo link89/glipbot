@@ -10,7 +10,11 @@ import tornado.concurrent
 import tornado.web
 
 
-from config import PORT, TORNADO_SETTINGS
+from glipbot.config import PORT, TORNADO_SETTINGS
+from glipbot.handlers.glip import (
+    GlipAuthHandler,
+    GlipEventsHandler,
+)
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -24,6 +28,8 @@ def main():
     # NOTE: use named group so that apispec could generate proper path pattern
     endpoints = [
         (r"^/health/?$", HealthHandler),
+        (r"^/glipbot/oauth/?$", GlipAuthHandler),
+        (r"^/glipbot/events/?$", GlipEventsHandler),
     ]
     application = tornado.web.Application(endpoints, **TORNADO_SETTINGS)
     http_server = tornado.httpserver.HTTPServer(application)

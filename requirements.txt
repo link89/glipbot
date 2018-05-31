@@ -1,3 +1,6 @@
 tornado
 sqlalchemy
 pymysql
+
+# master branch of ringcentral-python
+https://github.com/ringcentral/ringcentral-python/archive/master.zip
