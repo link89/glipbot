@@ -3,6 +3,9 @@ from ringcentral.sdk import SDK
 from .. import config
 from ..utils.clients import RcPlatformHelper
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class GlipService(object):
 
