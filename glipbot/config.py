@@ -27,6 +27,7 @@ DEBUG_DB_URL = URL(
     drivername="sqlite",
     database='debug.db',
 )
+print(DEBUG_DB_URL)
 
 TORNADO_SETTINGS = {
     "debug": MODE == "DEBUG",

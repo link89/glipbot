@@ -36,4 +36,4 @@ class GlipEventsHandler(BaseHandler):
         self.finish()
         logger.info("body is: %s", self.request.body)
         if self.request.body:
-            glip.service.dispatch(json.loads(self.request.body))
+            await glip.service.dispatch(json.loads(self.request.body))

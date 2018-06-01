@@ -1,4 +1,4 @@
-from sqlalchemy.orm import raiseload
+from .schemas import Session
 from .schemas import (
     Feed,
     Subscription,
@@ -7,8 +7,16 @@ from .schemas import (
 
 
 class Dao(object):
-    def __init__(self, session_factory):
-        self.session_factory = session_factory
+    def __init__(self, session_factory=None):
+        self.session_factory = session_factory or Session
+
+    def get_feed(self, href):
+        session = self.session_factory()
+        try:
+            feed = session.query(Feed).filter_by(href=href).first()
+        finally:
+            session.close()
+        return feed
 
     def get_or_create_feed(self, href):
         session = self.session_factory()
@@ -25,6 +33,17 @@ class Dao(object):
         finally:
             session.close()
         return feed
+
+    def get_subscription(self, group_id, feed_id):
+        session = self.session_factory()
+        try:
+            subscription = session.query(Subscription) \
+                .filter_by(group_id=group_id) \
+                .filter_by(feed_id=feed_id) \
+                .first()
+        finally:
+            session.close()
+        return subscription
 
     def get_or_create_subscription(self, group_id, feed_id):
         session = self.session_factory()
