@@ -6,7 +6,8 @@ from sqlalchemy.engine.url import URL
 logging.basicConfig(level=logging.INFO)
 
 PORT = int(os.environ.get("PORT", 8888))
-DEBUG_MODE = os.environ.get("MODE", "PROD") == "DEBUG"
+
+MODE = os.environ.get("MODE", "DEBUG")
 
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.environ.get("DB_PORT", 3306))
@@ -22,9 +23,13 @@ DB_URL = URL(
     database=DB_NAME,
 )
 
+DEBUG_DB_URL = URL(
+    drivername="sqlite",
+    database='debug.db',
+)
 
 TORNADO_SETTINGS = {
-    "debug": DEBUG_MODE,
+    "debug": MODE == "DEBUG",
 }
 
 

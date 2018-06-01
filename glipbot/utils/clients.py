@@ -1,6 +1,8 @@
 from boltons.cacheutils import cachedproperty
+import feedparser
 
 from ringcentral.platform.platform import Platform
+from tornado.httpclient import AsyncHTTPClient
 
 
 class RcPlatformHelper(object):
@@ -48,3 +50,16 @@ class RcPlatformHelper(object):
 
         res = self.platform.post('/subscription', body=data)
         return res.json_dict()
+
+
+class FeedHelper(object):
+    def __init__(self, http=None):
+        self._http: AsyncHTTPClient = AsyncHTTPClient() if http is None else http
+
+    async def get_feed(self, url):
+        res = await self._http.fetch(url)
+        return res
+
+    @staticmethod
+    def parse(data):
+        return feedparser.parse(data)

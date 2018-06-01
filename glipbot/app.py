@@ -10,8 +10,8 @@ import tornado.concurrent
 import tornado.web
 
 
-from glipbot.config import PORT, TORNADO_SETTINGS
-from glipbot.handlers.glip import (
+from .config import PORT, TORNADO_SETTINGS
+from .handlers.glip import (
     GlipAuthHandler,
     GlipEventsHandler,
 )

@@ -1,6 +1,7 @@
 tornado
 sqlalchemy
 pymysql
+feedparser
 
 # master branch of ringcentral-python
 https://github.com/ringcentral/ringcentral-python/archive/master.zip
