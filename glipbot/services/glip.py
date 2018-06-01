@@ -5,8 +5,7 @@ import time
 import pickle
 import asyncio
 
-import tornado.ioloop
-from tornado.platform.asyncio import to_asyncio_future
+from tornado.platform.asyncio import convert_yielded
 
 from typing import Sequence, Optional
 
@@ -189,8 +188,11 @@ class GlipService(object):
                 future.cancel()
             logger.info("update feeds: done")
 
+    async def push_feed(self):
+        ...
+
     def update_feeds_in_background(self):
-        tornado.ioloop.future_add_done_callback(to_asyncio_future(self.update_feeds()), lambda _:_)
+        convert_yielded(self.update_feeds())
 
 
 # Dao
