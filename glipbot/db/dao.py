@@ -63,6 +63,24 @@ class Dao(object):
             session.close()
         return subscriptions
 
+    def delete_subscriptions(self, group_id=None, feed_id=None):
+        session = self.session_factory()
+        try:
+            subscription = session.query(Subscription) \
+                .filter_by(group_id=group_id) \
+                .filter_by(feed_id=feed_id) \
+                .first()
+            if subscription is not None:
+                session.delete(subscription)
+        except Exception as e:
+            session.rollback()
+            raise e
+        else:
+            session.commit()
+        finally:
+            session.close()
+        return bool(subscription)
+
     def update_or_create_subscription(self, group_id, feed_id, last_updated=None):
         session = self.session_factory()
         try:

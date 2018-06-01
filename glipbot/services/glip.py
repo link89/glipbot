@@ -61,7 +61,7 @@ class RssSubscribeCmd(BaseCmd):
     """
     subscribe to rss feed
     """
-    pattern = re.compile(r"^rss subscribe ([^ ]+)$")
+    pattern = re.compile(r"^rss\s+subscribe\s+([^\s]+)$")
 
     def __init__(self, dao: Dao, rc_helper: RcPlatformHelper, feed_helper: FeedHelper):
         self.dao = dao
@@ -101,6 +101,25 @@ class RssSubscribeCmd(BaseCmd):
             self.rc_helper.post_to_group(group_id, msg)
 
 
+class RssUnsubscribeCmd(BaseCmd):
+    pattern = re.compile(r"^rss\s+feed\s+(\d+)\s+unsubscribe$")
+
+    def __init__(self, dao: Dao, rc_helper: RcPlatformHelper):
+        self.dao = dao
+        self.rc_helper = rc_helper
+
+    async def run(self, post, feed_id: str, *args):
+        feed_id = int(feed_id)
+        group_id = self.get_group_id(post)
+        if self.dao.delete_subscriptions(group_id=group_id, feed_id=feed_id):
+            msg = "Successfully unsubscribe feed {} !".format(feed_id)
+        else:
+            msg = "Fail to unsubscribe feed {}! " \
+                  "Please run following command to check your feed id!" \
+                  "[code] rss list".format(feed_id)
+        self.rc_helper.post_to_group(group_id, msg)
+
+
 class RssListCmd(BaseCmd):
     pattern = re.compile(r"^rss list$")
 
@@ -113,8 +132,9 @@ class RssListCmd(BaseCmd):
         subscriptions = self.dao.get_subscriptions(group_id=group_id, lazy=False)
         cards = []
         for subscription in subscriptions:
+            title = "{} {}".format(str(subscription.feed_id).ljust(5), subscription.feed.title)
             card = self.rc_helper.new_simple_card(
-                title=self.rc_helper.new_link(subscription.feed.title, subscription.feed.uri),
+                title=self.rc_helper.new_link(title, subscription.feed.uri),
             )
             cards.append(card)
         if cards:
@@ -252,6 +272,7 @@ cmd_services = (
     EchoCmd(rc_helper=_rc_helper),
     RssListCmd(dao=_dao, rc_helper=_rc_helper),
     RssSubscribeCmd(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper),
+    RssUnsubscribeCmd(dao=_dao, rc_helper=_rc_helper)
 )
 
 
