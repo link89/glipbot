@@ -4,6 +4,7 @@ import re
 import time
 import pickle
 import asyncio
+from boltons.strutils import html2text
 
 from tornado.platform.asyncio import convert_yielded
 
@@ -92,9 +93,9 @@ class RssSubscribeCmd(BaseCmd):
             msg = "You have already subscribed this feed {} !".format(uri)
             self.rc_helper.post_to_group(group_id, msg)
         else:
-            # here we set last_updated to one hour before now for new subscription
-            # so that the subscriber will receive the update within one hour
-            last_updated = int(time.time()) - 3600
+            # here we set last_updated to one day before now for new subscription
+            # so that the subscriber will receive the update within one day
+            last_updated = int(time.time()) - 3600 * 24
             self.dao.update_or_create_subscription(group_id, feed.id, last_updated=last_updated)
             msg = "Successfully subscribe feed {} !".format(uri)
             self.rc_helper.post_to_group(group_id, msg)
@@ -188,11 +189,43 @@ class GlipService(object):
                 future.cancel()
             logger.info("update feeds: done")
 
-    async def push_feed(self):
-        ...
+    async def update_subscription(self, subscription: Subscription):
+        logger.info("update subscription: start to update %s for %s", subscription.feed.title, subscription.group_id)
+        entries = self.dao.get_entries(subscription.feed_id, last_updated=subscription.last_updated)
+        cards = []
+        for entry in entries:
+            card = self.rc_helper.new_simple_card(
+                title=self.rc_helper.new_link(entry.title, entry.link),
+                text=html2text(entry.summary),
+                thumbnail_uri=entry.thumbnail,
+            )
+            cards.append(card)
+        if cards:
+            text = "You have {} new entries from {}!".format(len(cards), subscription.feed.title)
+            logger.info(text)
+            data = self.rc_helper.new_simple_cards(text=text, cards=cards)
+            self.rc_helper.post_to_group(subscription.group_id, data)
+            self.dao.update_or_create_subscription(
+                group_id=subscription.group_id, feed_id=subscription.feed_id,
+                last_updated=max(e.last_updated for e in entries),
+            )
+            logger.info("update subscription: success to update %s for %s", subscription.feed.title, subscription.group_id)
+
+    async def update_subscriptions(self):
+        while True:
+            logger.info("update subscriptions: start")
+            futures = list(self.update_subscription(sub) for sub in self.dao.get_subscriptions(lazy=False))
+            futures.append(asyncio.sleep(self.push_period))
+            done, pending = await asyncio.wait(futures, timeout=self.fetch_period, return_when=asyncio.ALL_COMPLETED)
+            for future in pending:
+                future.cancel()
+            logger.info("update subscriptions: done")
 
     def update_feeds_in_background(self):
         convert_yielded(self.update_feeds())
+
+    def update_subscriptions_in_background(self):
+        convert_yielded(self.update_subscriptions())
 
 
 # Dao
@@ -224,6 +257,7 @@ cmd_services = (
 
 # glip service
 service = GlipService(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper, cmd_services=cmd_services,
-                      fetch_period=10)
+                      fetch_period=10, push_period=10)
 
 service.update_feeds_in_background()
+service.update_subscriptions_in_background()

@@ -107,3 +107,17 @@ class Dao(object):
         finally:
             session.close()
 
+    def get_entries(self, feed_id=None, last_updated=None):
+        session = self.session_factory()
+        try:
+            query = session.query(Entry)
+            if feed_id is not None:
+                query = query.filter_by(feed_id=feed_id)
+            if last_updated is not None:
+                query = query.filter(Entry.last_updated > last_updated)
+            entries = query.all()
+        finally:
+            session.close()
+        return entries
+
+
