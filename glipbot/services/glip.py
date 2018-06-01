@@ -39,7 +39,8 @@ class SubscribeCmd(BaseCmd):
         if match is not None:
             return match.groups()
 
-    async def run(self, post, url):
+    async def run(self, post, url:str):
+        url = url.strip()
         group_id = post["body"]["groupId"]
         raw_feed = await self._fetch_feed(group_id, url)
         href = raw_feed.get("href", url)
