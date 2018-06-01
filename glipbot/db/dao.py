@@ -1,3 +1,5 @@
+from typing import Optional, Sequence
+from sqlalchemy.orm import joinedload
 from .schemas import Session
 from .schemas import (
     Feed,
@@ -35,16 +37,26 @@ class Dao(object):
             session.close()
         return feed
 
-    def get_subscription(self, group_id, feed_id):
+    def get_subscription(self, group_id, feed_id) -> Optional[Subscription]:
+        subscriptions = self.get_subscriptions(group_id, feed_id)
+        if len(subscriptions) > 0:
+            return subscriptions[0]
+        return None
+
+    def get_subscriptions(self, group_id=None, feed_id=None, lazy=True) -> Sequence[Subscription]:
         session = self.session_factory()
         try:
-            subscription = session.query(Subscription) \
-                .filter_by(group_id=group_id) \
-                .filter_by(feed_id=feed_id) \
-                .first()
+            query = session.query(Subscription)
+            if not lazy:
+                query = query.options(joinedload(Subscription.feed))
+            if group_id is not None:
+                query = query.filter_by(group_id=group_id)
+            if feed_id is not None:
+                query = query.filter_by(feed_id=feed_id)
+            subscriptions = query.all()
         finally:
             session.close()
-        return subscription
+        return subscriptions
 
     def get_or_create_subscription(self, group_id, feed_id):
         session = self.session_factory()

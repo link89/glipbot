@@ -16,10 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class BaseCmd(abc.ABC):
+    pattern = None
 
-    @abc.abstractmethod
     def parse(self, post) -> Optional[tuple]:
-        ...
+        text = self.get_text(post).strip()
+        match = self.pattern.match(text)
+        if match is not None:
+            return match.groups()
 
     @abc.abstractmethod
     async def run(self, post, *args):
@@ -43,33 +46,21 @@ class EchoCmd(BaseCmd):
     def __init__(self, rc_helper: RcPlatformHelper):
         self.rc_helper = rc_helper
 
-    def parse(self, post):
-        text = self.get_text(post)
-        match = self.pattern.match(text)
-        if match is not None:
-            return match.groups()
-
     async def run(self, post, *args):
         group_id = self.get_group_id(post)
         self.rc_helper.post_to_group(group_id, 'echo')
 
 
-class SubscribeCmd(BaseCmd):
+class RssSubscribeCmd(BaseCmd):
     """
     subscribe to rss feed
     """
-    pattern = re.compile(r"^rss subscribe ([^ ]+)")
+    pattern = re.compile(r"^rss subscribe ([^ ]+)$")
 
     def __init__(self, dao: Dao, rc_helper: RcPlatformHelper, feed_helper: FeedHelper):
         self.dao = dao
         self.rc_helper = rc_helper
         self.feed_helper = feed_helper
-
-    def parse(self, post):
-        text = self.get_text(post)
-        match = self.pattern.match(text)
-        if match is not None:
-            return match.groups()
 
     async def run(self, post, url: str, *args):
         url = url.strip()
@@ -100,6 +91,32 @@ class SubscribeCmd(BaseCmd):
             self.dao.get_or_create_subscription(group_id, feed.id)
             msg = "Successfully subscribe feed {} !".format(href)
             self.rc_helper.post_to_group(group_id, msg)
+
+
+class RssListCmd(BaseCmd):
+    pattern = re.compile(r"^rss list$")
+
+    def __init__(self, dao: Dao, rc_helper: RcPlatformHelper):
+        self.dao = dao
+        self.rc_helper = rc_helper
+
+    async def run(self, post, *args):
+        group_id = self.get_group_id(post)
+        subscriptions = self.dao.get_subscriptions(group_id=group_id, lazy=False)
+        cards = []
+        for subscription in subscriptions:
+            card = self.rc_helper.new_simple_card(
+                title=self.rc_helper.new_link(subscription.feed.title, subscription.feed.href),
+            )
+            cards.append(card)
+        if cards:
+            text = "You have subscribed {} feeds!".format(len(cards))
+            data = self.rc_helper.new_simple_cards(text=text, cards=cards)
+        else:
+            text = "You don't yet subscribe any feeds! Subscribe your first feed by following command: " \
+                   "[code] rss subscribe {RSS_URL}"
+            data = self.rc_helper.new_simple_cards(text=text)
+        self.rc_helper.post_to_group(group_id, data)
 
 
 class GlipService(object):
@@ -151,7 +168,8 @@ _feed_helper = FeedHelper()
 # cmd services
 cmd_services = (
     EchoCmd(rc_helper=_rc_helper),
-    SubscribeCmd(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper),
+    RssListCmd(dao=_dao, rc_helper=_rc_helper),
+    RssSubscribeCmd(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper),
 )
 
 

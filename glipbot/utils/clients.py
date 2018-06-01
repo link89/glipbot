@@ -51,6 +51,33 @@ class RcPlatformHelper(object):
         res = self.platform.post('/subscription', body=data)
         return res.json_dict()
 
+    @staticmethod
+    def new_simple_card(title, text=None, thumbnail_uri=None):
+        card = {
+            "type": "Card",
+            "color": "#f2f2f2",
+            "fallback": title,
+            "title": title,
+        }
+        if text:
+            card["text"] = text
+        if thumbnail_uri:
+            card["thumbnailUri"] = thumbnail_uri
+        return card
+
+    @staticmethod
+    def new_simple_cards(text=None, cards=None):
+        data = {}
+        if text:
+            data["text"] = text
+        if cards:
+            data["attachments"] = cards
+        return data
+
+    @staticmethod
+    def new_link(text, url):
+        return "[{}]({})".format(text, url)
+
 
 class FeedHelper(object):
     def __init__(self, http=None):
