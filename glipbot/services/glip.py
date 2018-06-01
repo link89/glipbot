@@ -178,13 +178,42 @@ class RssSearchCmd(BaseCmd):
         re.compile(r"^rss\s+search\s+(.*)"),
     )
 
+    def __init__(self, dao: Dao, rc_helper: RcPlatformHelper):
+        self.dao = dao
+        self.rc_helper = rc_helper
+
     async def run(self, post, *args):
-        feed_id = keyword = None
+        group_id = self.get_group_id(post)
         if len(args) == 2:
             feed_id, keyword = args
+            feed_id = int(feed_id)
         else:
+            feed_id = None
             keyword = args[0]
+        subscriptions = self.dao.get_subscriptions(group_id=group_id, feed_id=feed_id)
+        feed_ids = [sub.feed_id for sub in subscriptions]
+        entries = []
+        for feed_id in feed_ids:
+            for entry in self.dao.get_entries(feed_id=feed_id):
+                if keyword in entry.title or keyword in entry.summary:
+                    entries.append(entry)
 
+        cards = []
+        for entry in entries:
+            card = self.rc_helper.new_simple_card(
+                title=self.rc_helper.new_link(entry.title, entry.link),
+                text=html2text(entry.summary),
+                thumbnail_uri=entry.thumbnail,
+            )
+            cards.append(card)
+        if cards:
+            text = "{} entries match {} !".format(len(cards), keyword)
+            logger.info(text)
+            data = self.rc_helper.new_simple_cards(text=text, cards=cards)
+        else:
+            data = text = "No entry match {} !".format(keyword)
+        logger.info(text)
+        self.rc_helper.post_to_group(group_id, data)
 
 
 class GlipService(object):
@@ -312,7 +341,8 @@ cmd_services = (
     RssHelpCmd(rc_helper=_rc_helper),
     RssListCmd(dao=_dao, rc_helper=_rc_helper),
     RssSubscribeCmd(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper),
-    RssUnsubscribeCmd(dao=_dao, rc_helper=_rc_helper)
+    RssUnsubscribeCmd(dao=_dao, rc_helper=_rc_helper),
+    RssSearchCmd(dao=_dao, rc_helper=_rc_helper),
 )
 
 
