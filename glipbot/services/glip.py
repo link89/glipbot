@@ -25,8 +25,39 @@ class BaseCmd(abc.ABC):
     async def run(self, post, *args):
         ...
 
+    @classmethod
+    def get_text(cls, post):
+        return post["body"]["text"] or ""
+
+    @classmethod
+    def get_group_id(cls, post):
+        return post["body"]["groupId"]
+
+
+class EchoCmd(BaseCmd):
+    """
+    this command is for debug
+    """
+    pattern = re.compile(r"^echo$")
+
+    def __init__(self, rc_helper: RcPlatformHelper):
+        self.rc_helper = rc_helper
+
+    def parse(self, post):
+        text = self.get_text(post)
+        match = self.pattern.match(text)
+        if match is not None:
+            return match.groups()
+
+    async def run(self, post, *args):
+        group_id = self.get_group_id(post)
+        self.rc_helper.post_to_group(group_id, 'echo')
+
 
 class SubscribeCmd(BaseCmd):
+    """
+    subscribe to rss feed
+    """
     pattern = re.compile(r"^rss subscribe ([^ ]+)")
 
     def __init__(self, dao: Dao, rc_helper: RcPlatformHelper, feed_helper: FeedHelper):
@@ -35,11 +66,12 @@ class SubscribeCmd(BaseCmd):
         self.feed_helper = feed_helper
 
     def parse(self, post):
-        match = self.pattern.match(post["body"]["text"] or "")
+        text = self.get_text(post)
+        match = self.pattern.match(text)
         if match is not None:
             return match.groups()
 
-    async def run(self, post, url:str):
+    async def run(self, post, url: str, *args):
         url = url.strip()
         group_id = post["body"]["groupId"]
         raw_feed = await self._fetch_feed(group_id, url)
@@ -116,6 +148,7 @@ _feed_helper = FeedHelper()
 
 # cmd services
 cmd_services = (
+    EchoCmd(rc_helper=_rc_helper),
     SubscribeCmd(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper),
 )
 
