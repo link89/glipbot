@@ -1,3 +1,6 @@
+import json
+import time
+
 from boltons.cacheutils import cachedproperty
 import feedparser
 
@@ -94,17 +97,41 @@ class FeedHelper(object):
     def parse(data):
         feed = feedparser.parse(data)
         if feed.bozo != 0:
-            raise RuntimeError("error occur during parsing rss feed: {}".format(data))
+            raise feed.bozo_exception
         return feed
-
-    @staticmethod
-    def get_feed_href(feed, default=None):
-        return feed.get("href", default)
 
     @staticmethod
     def get_feed_title(feed):
         return feed.feed.title
 
     @staticmethod
-    def get_entries(feed):
+    def get_feed_entries(feed):
         return feed.entries
+
+    @staticmethod
+    def get_entry_title(entry):
+        return entry.title
+
+    @staticmethod
+    def get_entry_link(entry):
+        return entry.link
+
+    @staticmethod
+    def get_entry_key(entry):
+        return entry.link
+
+    @staticmethod
+    def get_entry_updated(entry):
+        return int(time.mktime(entry.updated_parsed))
+
+    @staticmethod
+    def get_entry_summary(entry):
+        return entry.summary
+
+    @staticmethod
+    def get_thumbnail(entry):
+        return None
+
+    @staticmethod
+    def to_json(obj):
+        return json.dumps(obj)

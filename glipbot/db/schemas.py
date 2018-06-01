@@ -12,8 +12,12 @@ Base = declarative_base()
 class Feed(Base):
     __tablename__ = 'feed'
     id = Column(Integer, primary_key=True)
-    href = Column(String(250))
+
+    uri = Column(String(250))
     title = Column(String(250))
+
+    last_updated = Column(Integer, default=0)
+
     subscriptions = relationship('Subscription', back_populates="feed")
     entries = relationship('Entry', back_populates="feed")
 
@@ -23,6 +27,8 @@ class Subscription(Base):
     id = Column(Integer, primary_key=True)
     group_id = Column(String(32))
 
+    last_updated = Column(Integer, default=0)
+
     feed_id = Column(Integer, ForeignKey(Feed.id))
     feed = relationship(Feed, back_populates="subscriptions")
 
@@ -30,9 +36,13 @@ class Subscription(Base):
 class Entry(Base):
     __tablename__ = 'entry'
     id = Column(Integer, primary_key=True)
+    key = Column(String(250))
     title = Column(String(250))
     link = Column(String(250))
-    data = Column(Text())
+    summary = Column(Text)
+    thumbnail = Column(Text)
+
+    last_updated = Column(Integer, default=0)
 
     feed_id = Column(Integer, ForeignKey(Feed.id))
     feed = relationship(Feed, back_populates="entries")

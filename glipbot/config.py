@@ -25,7 +25,7 @@ DB_URL = URL(
 
 DEBUG_DB_URL = URL(
     drivername="sqlite",
-    database='debug.db',
+    database='glipbot.db',
 )
 print(DEBUG_DB_URL)
 

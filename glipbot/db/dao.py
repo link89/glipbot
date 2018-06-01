@@ -1,3 +1,4 @@
+import time
 from typing import Optional, Sequence
 from sqlalchemy.orm import joinedload
 from .schemas import Session
@@ -9,25 +10,29 @@ from .schemas import (
 
 
 class Dao(object):
+
     def __init__(self, session_factory=None):
         self.session_factory = session_factory or Session
 
-    def get_feed(self, href):
+    def get_feeds(self,) -> Sequence[Feed]:
         session = self.session_factory()
         try:
-            feed = session.query(Feed).filter_by(href=href).first()
+            feeds = session.query(Feed).all()
         finally:
             session.close()
-        return feed
+        return feeds
 
-    def get_or_create_feed(self, href, title):
+    def update_or_create_feed(self, uri, title, last_updated=None):
+        if last_updated is None:
+            last_updated = int(time.time())
         session = self.session_factory()
         try:
-            feed = session.query(Feed).filter_by(href=href).first()
+            feed = session.query(Feed).filter_by(uri=uri).first()
             if feed is None:
-                feed = Feed(href=href)
+                feed = Feed(uri=uri)
                 session.add(feed)
             feed.title = title
+            feed.last_updated = last_updated
         except Exception as e:
             session.rollback()
             raise e
@@ -58,7 +63,7 @@ class Dao(object):
             session.close()
         return subscriptions
 
-    def get_or_create_subscription(self, group_id, feed_id):
+    def update_or_create_subscription(self, group_id, feed_id, last_updated=None):
         session = self.session_factory()
         try:
             subscription = session.query(Subscription) \
@@ -68,6 +73,8 @@ class Dao(object):
             if subscription is None:
                 subscription = Subscription(group_id=group_id, feed_id=feed_id)
                 session.add(subscription)
+            if last_updated is not None:
+                subscription.last_updated = last_updated
         except Exception as e:
             session.rollback()
             raise e
@@ -76,3 +83,27 @@ class Dao(object):
         finally:
             session.close()
         return subscription
+
+    def update_or_create_entry(self, feed_id, key, title, link, summary, thumbnail, last_updated):
+        session = self.session_factory()
+        try:
+            entry = session.query(Entry) \
+                .filter_by(feed_id=feed_id) \
+                .filter_by(key=key) \
+                .first()
+            if entry is None:
+                entry = Entry(feed_id=feed_id, key=key)
+                session.add(entry)
+            entry.title = title
+            entry.link = link
+            entry.summary = summary
+            entry.thumbnail = thumbnail
+            entry.last_updated = last_updated
+        except Exception as e:
+            session.rollback()
+            raise e
+        else:
+            session.commit()
+        finally:
+            session.close()
+

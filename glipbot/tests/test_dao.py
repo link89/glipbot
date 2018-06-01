@@ -9,9 +9,9 @@ class TestDao(unittest.TestCase):
         self.dao = Dao(session_factory=Session)
 
     def test_feed(self):
-        href = "http://www.solidot.org/index.rss"
-        feed = self.dao.get_or_create_feed(href)
+        uri = "http://www.solidot.org/index.rss"
+        feed = self.dao.update_or_create_feed(uri)
         print(feed)
-        subscription = self.dao.get_or_create_subscription("123", feed.id)
+        subscription = self.dao.update_or_create_subscription("123", feed.id)
         print(subscription)
 
