@@ -122,11 +122,13 @@ class FeedHelper(object):
 
     @staticmethod
     def get_entry_updated(entry):
-        return int(time.mktime(entry.updated_parsed))
+        if "updated_parsed" in entry:
+            return int(time.mktime(entry.updated_parsed))
+        return 0
 
     @staticmethod
     def get_entry_summary(entry):
-        return entry.summary
+        return entry.get("summary", "")
 
     @staticmethod
     def get_thumbnail(entry):

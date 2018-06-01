@@ -74,6 +74,10 @@ class RssHelpCmd(BaseCmd):
             "",
             "rss feed FEED_ID unsubscribe",
             "  Unsubscribe feed",
+            "",
+            "rss search KEYWORDS",
+            "rss feed FEED_ID search KEYWORDS",
+            "  Subscribe feed",
         ))
         self.rc_helper.post_to_group(group_id, msg)
 
@@ -142,7 +146,7 @@ class RssUnsubscribeCmd(BaseCmd):
 
 
 class RssListCmd(BaseCmd):
-    pattern = re.compile(r"^rss list$")
+    pattern = re.compile(r"^rss\s+list$")
 
     def __init__(self, dao: Dao, rc_helper: RcPlatformHelper):
         self.dao = dao
@@ -166,6 +170,21 @@ class RssListCmd(BaseCmd):
                    "[code] rss subscribe FEED_URI"
             data = self.rc_helper.new_simple_cards(text=text)
         self.rc_helper.post_to_group(group_id, data)
+
+
+class RssSearchCmd(BaseCmd):
+    patterns = (
+        re.compile(r"^rss\s+feed\s+(\d+)\s+search\s+(.*)"),
+        re.compile(r"^rss\s+search\s+(.*)"),
+    )
+
+    async def run(self, post, *args):
+        feed_id = keyword = None
+        if len(args) == 2:
+            feed_id, keyword = args
+        else:
+            keyword = args[0]
+
 
 
 class GlipService(object):
