@@ -185,17 +185,18 @@ class RssSearchCmd(BaseCmd):
     async def run(self, post, *args):
         group_id = self.get_group_id(post)
         if len(args) == 2:
-            feed_id, keyword = args
+            feed_id, keywords = args
             feed_id = int(feed_id)
         else:
             feed_id = None
-            keyword = args[0]
+            keywords: str = args[0]
+        pattern = re.compile("|".join("({})".format(re.escape(k)) for k in keywords.split()), flags=re.IGNORECASE)
         subscriptions = self.dao.get_subscriptions(group_id=group_id, feed_id=feed_id)
         feed_ids = [sub.feed_id for sub in subscriptions]
         entries = []
         for feed_id in feed_ids:
             for entry in self.dao.get_entries(feed_id=feed_id):
-                if keyword in entry.title or keyword in entry.summary:
+                if pattern.search(entry.title) or pattern.search(entry.summary):
                     entries.append(entry)
 
         cards = []
@@ -207,11 +208,11 @@ class RssSearchCmd(BaseCmd):
             )
             cards.append(card)
         if cards:
-            text = "{} entries match {} !".format(len(cards), keyword)
+            text = "{} entries match {} !".format(len(cards), keywords)
             logger.info(text)
             data = self.rc_helper.new_simple_cards(text=text, cards=cards)
         else:
-            data = text = "No entry match {} !".format(keyword)
+            data = text = "No entry match {} !".format(keywords)
         logger.info(text)
         self.rc_helper.post_to_group(group_id, data)
 
