@@ -23,12 +23,18 @@ logger = logging.getLogger(__name__)
 
 class BaseCmd(abc.ABC):
     pattern = None
+    patterns = None
 
     def parse(self, post) -> Optional[tuple]:
+        if self.pattern is None:
+            patterns = self.patterns
+        else:
+            patterns = (self.pattern,)
         text = self.get_text(post).strip()
-        match = self.pattern.match(text)
-        if match is not None:
-            return match.groups()
+        for pattern in patterns:
+            match = pattern.match(text)
+            if match is not None:
+                return match.groups()
 
     @abc.abstractmethod
     async def run(self, post, *args):
@@ -43,18 +49,33 @@ class BaseCmd(abc.ABC):
         return post["body"]["groupId"]
 
 
-class EchoCmd(BaseCmd):
+class RssHelpCmd(BaseCmd):
     """
     this command is for debug
     """
-    pattern = re.compile(r"^echo$")
+    pattern = re.compile(r"^rss\s+help$")
 
     def __init__(self, rc_helper: RcPlatformHelper):
         self.rc_helper = rc_helper
 
     async def run(self, post, *args):
         group_id = self.get_group_id(post)
-        self.rc_helper.post_to_group(group_id, 'echo')
+        msg = '\n'.join((
+            "Welcome to use Glip RSS Bot! (Power by Python 3, Tornado and feedparser)",
+            "[code]",
+            "rss help",
+            "  Print this usage",
+            "",
+            "rss list",
+            "  List all feeds",
+            "",
+            "rss subscribe FEED_URI",
+            "  Subscribe feed",
+            "",
+            "rss feed FEED_ID unsubscribe",
+            "  Unsubscribe feed",
+        ))
+        self.rc_helper.post_to_group(group_id, msg)
 
 
 class RssSubscribeCmd(BaseCmd):
@@ -142,7 +163,7 @@ class RssListCmd(BaseCmd):
             data = self.rc_helper.new_simple_cards(text=text, cards=cards)
         else:
             text = "You don't yet subscribe any feeds! Subscribe your first feed by following command: " \
-                   "[code] rss subscribe uri_of_feed"
+                   "[code] rss subscribe FEED_URI"
             data = self.rc_helper.new_simple_cards(text=text)
         self.rc_helper.post_to_group(group_id, data)
 
@@ -269,7 +290,7 @@ _feed_helper = FeedHelper()
 
 # cmd services
 cmd_services = (
-    EchoCmd(rc_helper=_rc_helper),
+    RssHelpCmd(rc_helper=_rc_helper),
     RssListCmd(dao=_dao, rc_helper=_rc_helper),
     RssSubscribeCmd(dao=_dao, rc_helper=_rc_helper, feed_helper=_feed_helper),
     RssUnsubscribeCmd(dao=_dao, rc_helper=_rc_helper)
