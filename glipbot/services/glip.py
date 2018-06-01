@@ -77,7 +77,7 @@ class RssHelpCmd(BaseCmd):
             "",
             "rss search KEYWORDS",
             "rss feed FEED_ID search KEYWORDS",
-            "  Subscribe feed",
+            "  Search feed",
         ))
         self.rc_helper.post_to_group(group_id, msg)
 
