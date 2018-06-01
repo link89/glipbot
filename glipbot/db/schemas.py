@@ -13,6 +13,7 @@ class Feed(Base):
     __tablename__ = 'feed'
     id = Column(Integer, primary_key=True)
     href = Column(String(250))
+    title = Column(String(250))
     subscriptions = relationship('Subscription', back_populates="feed")
     entries = relationship('Entry', back_populates="feed")
 

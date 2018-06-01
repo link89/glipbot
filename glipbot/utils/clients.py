@@ -57,9 +57,27 @@ class FeedHelper(object):
         self._http: AsyncHTTPClient = AsyncHTTPClient() if http is None else http
 
     async def get_feed(self, url):
-        res = await self._http.fetch(url)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.116 Safari/537.36'
+        }
+        res = await self._http.fetch(url, headers=headers)
         return res
 
     @staticmethod
     def parse(data):
-        return feedparser.parse(data)
+        feed = feedparser.parse(data)
+        if feed.bozo != 0:
+            raise RuntimeError("error occur during parsing rss feed: {}".format(data))
+        return feed
+
+    @staticmethod
+    def get_feed_href(feed, default=None):
+        return feed.get("href", default)
+
+    @staticmethod
+    def get_feed_title(feed):
+        return feed.feed.title
+
+    @staticmethod
+    def get_entries(feed):
+        return feed.entries

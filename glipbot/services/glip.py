@@ -73,29 +73,33 @@ class SubscribeCmd(BaseCmd):
 
     async def run(self, post, url: str, *args):
         url = url.strip()
-        group_id = post["body"]["groupId"]
+        group_id = self.get_group_id(post)
         raw_feed = await self._fetch_feed(group_id, url)
-        href = raw_feed.get("href", url)
-        self._create_subscription(group_id, href)
+        href = self.feed_helper.get_feed_href(raw_feed, url)
+        title = self.feed_helper.get_feed_title(raw_feed)
+        self._create_subscription(group_id, href, title)
 
     async def _fetch_feed(self, group_id, url):
         try:
             res = await self.feed_helper.get_feed(url)
             feed = self.feed_helper.parse(res.body)
         except Exception as e:
-            self.rc_helper.post_to_group(group_id, "fail to create fetch feed from {}".format(url))
+            msg = "Fail to subscribe {}, ensure the url you provide is a valid RSS feed!".format(url)
+            self.rc_helper.post_to_group(group_id, msg)
             raise e
         else:
             return feed
 
-    def _create_subscription(self, group_id, href):
-        feed = self.dao.get_or_create_feed(href)
+    def _create_subscription(self, group_id, href, title):
+        feed = self.dao.get_or_create_feed(href, title)
         subscription = self.dao.get_subscription(group_id, feed.id)
         if subscription is not None:
-            self.rc_helper.post_to_group(group_id, "you have already subscribed this feed {}".format(href))
+            msg = "You have already subscribed this feed {} !".format(href)
+            self.rc_helper.post_to_group(group_id, msg)
         else:
             self.dao.get_or_create_subscription(group_id, feed.id)
-            self.rc_helper.post_to_group(group_id, "successfully subscribe feed {}".format(href))
+            msg = "Successfully subscribe feed {} !".format(href)
+            self.rc_helper.post_to_group(group_id, msg)
 
 
 class GlipService(object):
@@ -123,8 +127,6 @@ class GlipService(object):
                 logger.info("command service: %s is match the command pattern", cmd_service)
                 await cmd_service.run(post, *match)
                 break
-        else:
-            self.rc_helper.post_to_group(post["body"]["groupId"], post["body"]["text"])
 
 
 # Dao

@@ -18,13 +18,14 @@ class Dao(object):
             session.close()
         return feed
 
-    def get_or_create_feed(self, href):
+    def get_or_create_feed(self, href, title):
         session = self.session_factory()
         try:
             feed = session.query(Feed).filter_by(href=href).first()
             if feed is None:
                 feed = Feed(href=href)
                 session.add(feed)
+            feed.title = title
         except Exception as e:
             session.rollback()
             raise e
