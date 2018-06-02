@@ -61,8 +61,8 @@ class RssHelpCmd(BaseCmd):
     async def run(self, post, *args):
         group_id = self.get_group_id(post)
         msg = '\n'.join((
-            "Welcome to use Glip RSS Bot! (Power by Python 3, Tornado and feedparser)",
-            "[code]",
+            "[code]Welcome to use Glip RSS Bot! (Powered by Python 3.6, Tornado and feedparser!)",
+            "",
             "rss help",
             "  Print this usage",
             "",
@@ -75,8 +75,8 @@ class RssHelpCmd(BaseCmd):
             "rss feed FEED_ID unsubscribe",
             "  Unsubscribe feed",
             "",
-            "rss search KEYWORDS",
-            "rss feed FEED_ID search KEYWORDS",
+            "rss search REGEX",
+            "rss feed FEED_ID search REGEX",
             "  Search feed",
         ))
         self.rc_helper.post_to_group(group_id, msg)
@@ -190,7 +190,7 @@ class RssSearchCmd(BaseCmd):
         else:
             feed_id = None
             keywords: str = args[0]
-        pattern = re.compile("|".join("({})".format(re.escape(k)) for k in keywords.split()), flags=re.IGNORECASE)
+        pattern = re.compile(keywords, flags=re.IGNORECASE)
         subscriptions = self.dao.get_subscriptions(group_id=group_id, feed_id=feed_id)
         feed_ids = [sub.feed_id for sub in subscriptions]
         entries = []
